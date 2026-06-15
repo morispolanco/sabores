@@ -608,11 +608,13 @@ def heuristic_ai_response(messages: List[Dict[str, str]], system_prompt: str, ag
 
 
 def maybe_call_external_ai(messages: List[Dict[str, str]], system_prompt: str, agente_rol: str) -> str:
-    api_url = st.secrets.get("HERCULES_API_URL", "").strip()
-    api_key = st.secrets.get("HERCULES_API_KEY", "").strip()
-    model = st.secrets.get("HERCULES_MODEL", "openai/gpt-5-mini")
+    api_url = st.secrets.get("OPENROUTER_API_URL", "https://openrouter.ai/api/v1/chat/completions").strip()
+    api_key = st.secrets.get("OPENROUTER_API_KEY", "").strip()
+    model = st.secrets.get("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")
+    http_referer = st.secrets.get("OPENROUTER_HTTP_REFERER", "").strip()
+    x_title = st.secrets.get("OPENROUTER_TITLE", "Sabores de Guatemala").strip()
 
-    if not api_url or not api_key:
+    if not api_key:
         return heuristic_ai_response(messages, system_prompt, agente_rol)
 
     try:
@@ -628,6 +630,10 @@ def maybe_call_external_ai(messages: List[Dict[str, str]], system_prompt: str, a
             "temperature": 0.4,
         }
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        if http_referer:
+            headers["HTTP-Referer"] = http_referer
+        if x_title:
+            headers["X-Title"] = x_title
         r = requests.post(api_url, headers=headers, json=payload, timeout=60)
         r.raise_for_status()
         data = r.json()
@@ -1287,7 +1293,7 @@ def page_configuracion() -> None:
 
     st.subheader("Navegación y notificaciones")
     st.write("El sidebar ya contiene la navegación principal del sistema y el badge de notificaciones no leídas.")
-    st.write("Para Streamlit Cloud, usa secretos para HERCULES_API_URL, HERCULES_API_KEY y HERCULES_MODEL.")
+    st.write("Para Streamlit Cloud, usa secretos para OPENROUTER_API_KEY y OPENROUTER_MODEL (por defecto: openai/gpt-oss-20b:free).")
 
 
 def render_sidebar() -> str:
